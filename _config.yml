@@ -3,8 +3,8 @@ description: A Technical Archive
 author: Shadi Youssef
 github: https://github.com/radiohub
 about: I'm an RF/analog IC design engineer. Radio Hub is my technical archive.
-disqus_shortname: stackproblems
-google_analytics: UA-XXXXXXXX-Y
+#disqus_shortname: stackproblems
+#google_analytics: UA-XXXXXXXX-Y
 
 enableTags: true
 tagarray: []
