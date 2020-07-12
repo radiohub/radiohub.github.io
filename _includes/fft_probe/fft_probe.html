@@ -1,0 +1,88 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>fft_probe</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2020-03-13">
+<meta name="DC.source" content="fft_probe.m">
+
+<body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [s_fft, s_psd, f] = fft_probe(s_time, fs, varargin)
+<span class="comment">% fft_probe   Fast Fourier Transform (FFT) probe</span>
+<span class="comment">%   [s_fft, s_psd, f] = fft_probe(s_time, fs) evaluates FFT s_fft and PSD</span>
+<span class="comment">%   s_psd of the time domain signa s_time sampled at a rate of fs.</span>
+<span class="comment">%</span>
+<span class="comment">%   [s_fft, s_psd, f] = fft_probe(..., validate_flag) plots the evaluated</span>
+<span class="comment">%   FFT and PSD if validate_flag is non-zero. PSD is plotted in dBm/Hz</span>
+<span class="comment">%   relative to 1-ohm load. Default validate_flag = 0.</span>
+<span class="comment">%</span>
+<span class="comment">%   [s_fft, s_psd, f] = fft_probe(..., [], fig_num) plots validation</span>
+<span class="comment">%   results in figure number fign_num. Default fign_num = 1</span>
+
+<span class="comment">%%---------------------------- Read varargin ----------------------------%%</span>
+<span class="keyword">if</span>(length(varargin)==0)
+    validate_flag = 0 ;
+    fig_num = 1 ;
+
+<span class="keyword">elseif</span>(length(varargin)==1)
+    validate_flag = varargin{1} ;
+    fig_num = 1 ;
+
+<span class="keyword">elseif</span>(length(varargin)==2)
+    validate_flag = varargin{1} ;
+    fig_num = varargin{2} ;
+
+<span class="keyword">else</span>
+    error(<span class="string">'Error: Too many input arguments.'</span>)
+
+<span class="keyword">end</span>
+
+<span class="comment">%%--------------------------- Check arguments ---------------------------%%</span>
+<span class="keyword">if</span> ~isnumeric(validate_flag)
+    error(<span class="string">'Error: validatation flag must be a numeric value.'</span>) ;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> ~isnumeric(fig_num)
+    error(<span class="string">'Error: Figure number must be a numeric value.'</span>) ;
+
+<span class="keyword">elseif</span> isempty(fig_num) || fig_num &lt;= 0
+    fig_num = 1 ;
+
+<span class="keyword">end</span>
+
+<span class="comment">%%------------------------------- FFT/PSD -------------------------------%%</span>
+N_fft = numel(s_time);
+f_step = fs/N_fft;
+
+f = ( [0 : N_fft - 1] - ceil(N_fft/2) ) * f_step;
+
+win_fft = blackmanharris(N_fft);
+win_fft = win_fft.'/sqrt(mean(win_fft.^2));
+
+s_fft = ifftshift(fft(s_time.*win_fft))/N_fft;
+s_psd = (abs(s_fft).^2)/f_step;
+
+<span class="comment">%%--------------------------- Validate FFT/PSD --------------------------%%</span>
+<span class="keyword">if</span> validate_flag
+
+    figure(fig_num); clf
+    set(gcf,<span class="string">'color'</span>,<span class="string">'w'</span>) ;
+
+    grid <span class="string">on</span>; hold <span class="string">on</span>
+    hndl = plot( f, 10*log10(abs(s_psd))+30 );
+
+    set(gca, <span class="string">'XTickLabel'</span>, get(gca, <span class="string">'XTick'</span>));
+
+    xlabel(<span class="string">'Frequency [Hz]'</span>)
+    ylabel(<span class="string">'PSD [dBm/Hz]'</span>)
+
+    set( gca, <span class="string">'FontSize'</span>, 14 ) ;
+    set( gca, <span class="string">'FontName'</span>, <span class="string">'Calibri'</span> ) ;
+
+    set(hndl, <span class="string">'LineStyle'</span>, <span class="string">'-'</span>) ;
+    set(hndl, <span class="string">'LineWidth'</span>, 2) ;
+
+<span class="keyword">end</span>
+</pre>
+</div></body>

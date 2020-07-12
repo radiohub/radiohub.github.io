@@ -1,0 +1,74 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>jitter_meter</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2019-11-03">
+<meta name="DC.source" content="jitter_meter.m">
+
+<body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [ tj_abs, tj_per, tj_cc, T_mean ] = jitter_meter(s, t, varargin)
+<span class="comment">% jitter_meter  jitter measurement</span>
+<span class="comment">%   tj_abs = jitter_meter(s, t) returns absolute jitter (TIE)</span>
+<span class="comment">%   measurements associated with the time instants at which the signal s</span>
+<span class="comment">%   defined along the time axis t crosses zero in the positive direction</span>
+<span class="comment">%   (rising edge).</span>
+<span class="comment">%</span>
+<span class="comment">%   tj_abs = jitter_meter(..., zc_threshold) returns absolute jitter (TIE)</span>
+<span class="comment">%   measurements associated with the time instants at which the signal s</span>
+<span class="comment">%   crosses zc_threshold in the positive direction (rising edge). The</span>
+<span class="comment">%   argument zc_threshold can be a 2-element vector specifying high-to-low</span>
+<span class="comment">%   and low-to-high threshold levels, thus representing hysteresis.</span>
+<span class="comment">%</span>
+<span class="comment">%   tj_abs = jitter_meter(..., [], edge_type) returns absolute jitter (TIE)</span>
+<span class="comment">%   measurements associated with the time instants at which the signal s</span>
+<span class="comment">%   crosses zc_threshold in the direction specified by edge_type</span>
+<span class="comment">%       edge_type = 'rise' (rising edge)</span>
+<span class="comment">%       edge_type = 'fall' (falling edge)</span>
+<span class="comment">%       edge_type = 'any' (rising and falling edge)</span>
+<span class="comment">%</span>
+<span class="comment">%   [..., tj_per] = jitter_meter(...) returns period jitter measurements.</span>
+<span class="comment">%</span>
+<span class="comment">%   [..., tj_per, tj_cc] = jitter_meter(...) returns period jitter and</span>
+<span class="comment">%   cycle jitter measurements.</span>
+<span class="comment">%</span>
+<span class="comment">%   [..., tj_per, tj_cc, T_mean] = jitter_meter(...) returns mean clock</span>
+<span class="comment">%   period.</span>
+
+<span class="comment">%%---------------------------- Read varargin ----------------------------%%</span>
+<span class="keyword">if</span> numel(varargin) == 0
+    zc_threshold = mean(s) ;
+    edge_type = <span class="string">'rise'</span> ;
+
+<span class="keyword">elseif</span> numel(varargin) == 1
+    zc_threshold = varargin{1} ;
+    edge_type = <span class="string">'rise'</span> ;
+
+<span class="keyword">elseif</span> numel(varargin) == 2
+    zc_threshold = varargin{1} ;
+    edge_type = varargin{2} ;
+
+<span class="keyword">else</span>
+    error(<span class="string">'Too many input arguments'</span>)
+
+<span class="keyword">end</span>
+
+<span class="comment">%%---------------------------- Check varargin ---------------------------%%</span>
+
+<span class="comment">%%--------------------------- Jitter analysis ---------------------------%%</span>
+<span class="comment">%--- Average clock/data period</span>
+t_zc = zcd( s, t, zc_threshold, edge_type ) ;
+T = diff(t_zc) ;
+T_mean = mean(T) ;
+
+<span class="comment">%--- Absolute jitter</span>
+tj_abs = ( t_zc - t_zc(1) ) - [ 0 : 1 : numel(t_zc)-1 ] * T_mean ;
+
+<span class="comment">%--- Period jitter</span>
+tj_per = T - T_mean ;
+
+<span class="comment">%--- Cycle-to-cycle jitter</span>
+tj_cc = diff(T) ;
+</pre>
+</div></body>

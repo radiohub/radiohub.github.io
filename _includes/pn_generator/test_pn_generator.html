@@ -1,0 +1,41 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+<title>test_pn_generator</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2019-10-20">
+<meta name="DC.source" content="test_pn_generator.m">
+
+<body><div class="content"><pre class="codeinput"><span class="comment">%%----------------------------- Housekeeping ----------------------------%%</span>
+clc
+clear
+
+<span class="comment">%%------------------------- Simulation parameters -----------------------%%</span>
+<span class="comment">%--- Desired total rms jitter</span>
+tjn_rms = 0.03 ;
+
+<span class="comment">%--- Desired phase noise profile</span>
+df       = [ 1.0E2,  1.0E3,  1.0E4,  1.0E5,  1.0E6,  1.0E7,  1.0E8 ] ;    <span class="comment">% Frequency offset</span>
+PN_dBcHz = [ -80.0, -100.0, -120.0, -120.0, -140.0, -140.0, -140.0 ] ;    <span class="comment">% Phase noise in dBc/Hz</span>
+
+<span class="comment">%--- Oversampling rate</span>
+osr = 16 ;
+
+<span class="comment">%%------------------ DO NOT CHANGE CODE BELOW THIS LINE -----------------%%</span>
+<span class="comment">%--- Generate phase noise signal</span>
+phij = pn_generator( df, PN_dBcHz, osr, 2*pi*tjn_rms, 1 ) ;
+
+<span class="comment">%--- Calculate rms phase noise</span>
+tjn_rms_check = sqrt( (norm(phij)^2) / numel(phij) ) / (2*pi) ;
+
+<span class="comment">%--- Display results</span>
+disp(<span class="string">''</span>)
+disp( [<span class="string">'Desired rms jitter [%] = '</span>, num2str(tjn_rms*1e2,<span class="string">'%1.2f\n'</span>)] )
+disp( [<span class="string">'Achieved rms jitter [%] = '</span>, num2str(tjn_rms_check*1e2,<span class="string">'%1.2f\n'</span>)] )
+disp( [<span class="string">'Error [%] = '</span>, num2str(100*(tjn_rms_check-tjn_rms)/tjn_rms,<span class="string">'%1.2f\n'</span>)] )
+disp(<span class="string">''</span>)
+</pre></div>
+
+</body>

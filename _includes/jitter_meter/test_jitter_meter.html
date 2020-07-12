@@ -1,0 +1,119 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>test_jitter_meter</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2019-11-03">
+<meta name="DC.source" content="test_jitter_meter.m">
+
+<body><div class="content"><pre class="codeinput"><span class="comment">%%----------------------------- Housekeeping ----------------------------%%</span>
+clc
+clear
+
+<span class="comment">%%------------------------- Simulation parameters -----------------------%%</span>
+f_clk = 5*1e6 ;         <span class="comment">% Clock signal frequency</span>
+trfn_clk = 0.01 ;       <span class="comment">% Clock rise/fall time  (normalized to signal period)</span>
+tjn_rms = 0.03 ;        <span class="comment">% Desired rms jitter (normalized to signal period)</span>
+
+osr = 512 ;             <span class="comment">% Oversampling rate</span>
+N_cycles = 2^16 ;       <span class="comment">% Number of cycles to simulate</span>
+
+<span class="comment">%%------------------ DO NOT CHANGE CODE BELOW THIS LINE -----------------%%</span>
+<span class="comment">%--- Establish time scale</span>
+fs = osr*f_clk ;
+N_samples = N_cycles*osr ;
+t = [ 0 : 1 : N_cycles*osr - 1 ] /fs;
+
+<span class="comment">%--- Generate jitter signal</span>
+idx_edge_ideal = osr * [ 0 : N_cycles-1 ] + 1 ;
+idx_edge_jitter = floor((tjn_rms*osr)*randn(1,N_cycles)) ;
+idx_edge = idx_edge_ideal + idx_edge_jitter ;
+
+idx_edge(1) = max([1,idx_edge(1)]) ;
+idx_edge(end) = min([idx_edge(end),N_samples]) ;
+
+s_edge = zeros(1,N_samples) ;
+s_edge(idx_edge) = 1 ;
+
+<span class="comment">%--- Generate noisy clock signal</span>
+h_clk = [zeros(1,osr/2),ones(1,osr/2)] ;
+gd_clk = osr/2 ;
+
+s = filter( h_clk, 1, [s_edge, zeros(1,gd_clk)] ) ;
+s = s( gd_clk + 1 : N_samples + gd_clk ) ;
+
+<span class="comment">%--- Introduce finite rise/fall time (Gaussian filter)</span>
+mu = osr/2 ;
+sigma = trfn_clk * osr * sqrt(2*log(sqrt(2)))/(2*pi*0.34);
+
+h_trans = 1/(sigma*sqrt(2*pi))*exp(-0.5*(([0:osr-1]-mu)/sigma).^2) ;
+gd_trans = mean( grpdelay(h_trans) ) ;
+
+s = filter( h_trans, 1, [s, zeros(1,gd_trans)] ) ;
+s = s( gd_trans + 1 : N_samples + gd_trans ) ;
+
+<span class="comment">%--- Jitter analysis</span>
+[ tj_clk_abs, tj_clk_per, tj_clk_cc, T_clk_mean ] = jitter_meter(s, t) ;
+
+tj_clk_abs_rms = std(tj_clk_abs) ;      <span class="comment">% Absolute jitter rms</span>
+tj_clk_per_rms = std(tj_clk_per) ;      <span class="comment">% Period jitter rms</span>
+tj_clk_cc_rms = std(tj_clk_cc) ;        <span class="comment">% Cycle-to-cycle jitter rms</span>
+
+<span class="comment">%%------------------------- Display/Plot results ------------------------%%</span>
+<span class="comment">%--- Display results</span>
+disp(<span class="string">' '</span>)
+disp( [<span class="string">'Clock jitter analysis:'</span>] )
+disp( [<span class="string">'  Frequency mean [MHz] = '</span>, num2str(1e-6*1/T_clk_mean, <span class="string">'%1.2f'</span>)] )
+disp( [<span class="string">'  Absolute jitter rms [%] = '</span>, num2str(100*tj_clk_abs_rms/T_clk_mean,<span class="string">'%1.2f'</span>)] )
+disp( [<span class="string">'  Period jitter rms [%] = '</span>, num2str(100*tj_clk_per_rms/T_clk_mean,<span class="string">'%1.2f'</span>)] )
+disp( [<span class="string">'  Cycle-to-cycle rms [%] = '</span>, num2str(100*tj_clk_cc_rms/T_clk_mean,<span class="string">'%1.2f'</span>)] )
+disp(<span class="string">' '</span>)
+
+<span class="comment">%--- Plot results</span>
+figure(1); clf
+set(gcf,<span class="string">'color'</span>,<span class="string">'w'</span>) ;
+
+<span class="comment">%--- Absolute jitter</span>
+subplot(3,4,[2,3])
+hndl_hist(1) = histogram(100*tj_clk_abs/T_clk_mean) ;
+hndl_axes(1) = gca ;
+
+xlabel(<span class="string">'Absolute jitter [%]'</span>) ;
+ylabel(<span class="string">'Probability []'</span>) ;
+
+<span class="comment">%--- Period jitter</span>
+subplot(3,4,[6,7])
+hndl_hist(2) = histogram(100*tj_clk_per/T_clk_mean) ;
+hndl_axes(2) = gca ;
+
+xlabel(<span class="string">'Period jitter [%]'</span>) ;
+ylabel(<span class="string">'Probability []'</span>) ;
+
+<span class="comment">%--- Cycle-to-cycle jitter</span>
+subplot(3,4,[10,11])
+hndl_hist(3) = histogram(100*tj_clk_cc/T_clk_mean) ;
+hndl_axes(3) = gca ;
+
+xlabel(<span class="string">'Cycle-to-cycle jitter [%]'</span>) ;
+ylabel(<span class="string">'Probability []'</span>) ;
+
+<span class="comment">%--- Format plots</span>
+set(hndl_hist,<span class="string">'BinWidth'</span>,2) ;
+set(hndl_hist,<span class="string">'Normalization'</span>,<span class="string">'probability'</span>) ;
+set(hndl_hist,<span class="string">'FaceColor'</span>,<span class="string">'k'</span>) ;
+set(hndl_hist,<span class="string">'EdgeColor'</span>,<span class="string">'w'</span>) ;
+set(hndl_hist,<span class="string">'FaceAlpha'</span>,0.8) ;
+
+set(hndl_axes, <span class="string">'XGrid'</span>, <span class="string">'on'</span>) ;
+set(hndl_axes, <span class="string">'YGrid'</span>, <span class="string">'on'</span>) ;
+set(hndl_axes, <span class="string">'FontName'</span>, <span class="string">'Calibri'</span>) ;
+set(hndl_axes, <span class="string">'FontSize'</span>, 11) ;
+
+set( hndl_axes, <span class="string">'XLim'</span>, [-1,+1]*5*ceil(max(abs([hndl_hist.Data]))/5) ) ;
+set( hndl_axes(1), <span class="string">'YLim'</span>, [0,0.05*ceil(max(hndl_hist(1).Values)/0.05)] ) ;
+set( hndl_axes(2), <span class="string">'YLim'</span>, [0,0.05*ceil(max(hndl_hist(2).Values)/0.05)] ) ;
+set( hndl_axes(3), <span class="string">'YLim'</span>, [0,0.05*ceil(max(hndl_hist(3).Values)/0.05)] ) ;
+</pre>
+</div></body>

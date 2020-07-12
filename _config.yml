@@ -1,0 +1,56 @@
+title: Radio Hub
+description: A Technical Archive
+author: Shadi Youssef
+github: https://github.com/radiohub
+about: I'm an RF/analog IC design engineer. Radio Hub is my technical archive.
+disqus_shortname: stackproblems
+google_analytics: UA-XXXXXXXX-Y
+
+enableTags: true
+tagarray: []
+
+collections:
+  project:
+    output: true
+    permalink: /project/:path/
+
+social:
+    - icon: fa-facebook
+      link: "#"
+    - icon: fa-twitter
+      link: "#"
+    - icon: fa-linkedin
+      link: "#"
+    - icon: fa-stack-exchange
+      link: "#"
+    - icon: fa-github
+      link: "https://github.com/agusmakmun"
+
+share:
+  twitter_username: github.io
+  fb_appid: 1749788565247320
+
+urls:
+    - text: Resume
+      url: /about/
+    #- text: My Projects
+    #  url: /projects/
+    #- text: XML Feed
+    #  url: /feed.xml
+
+url: "https://radiohub.github.io"
+baseurl: ""
+paginate: 20
+per_page: 20
+paginate_path: "/page/:num/"
+markdown: kramdown
+plugins:
+  - jekyll-paginate
+  - jekyll-gist
+
+compress_html:
+  clippings: all
+  comments: ["<!-- ", " -->"]
+  endings: all
+  ignore:
+    envs: ['development']

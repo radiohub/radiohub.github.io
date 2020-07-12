@@ -1,0 +1,152 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>quantizer</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2020-04-18">
+<meta name="DC.source" content="quantizer.m">
+</head>
+
+<body><div class="content"><pre class="codeinput"><span class="keyword">function</span> sout = quantizer(s_in, N, varargin)
+<span class="comment">% quantizer   quantizer</span>
+<span class="comment">%   s_out = quantizer(s_in, N) quantizes s_in to 2^N levels and returns</span>
+<span class="comment">%   the result in s_out. Full-scale is adjusted to accomodate signal peak.</span>
+<span class="comment">%</span>
+<span class="comment">%   s_out = quantizer(.., validate_flag) validates results by plotting s_in</span>
+<span class="comment">%   and s_out.</span>
+<span class="comment">%</span>
+<span class="comment">%   s_out = quantizer(.., [], fig_num) plots validation</span>
+<span class="comment">%   results in figure number fign_num. Default fign_num = 1</span>
+
+<span class="comment">%%---------------------------- Read varargin ----------------------------%%</span>
+<span class="keyword">if</span>(length(varargin)==0)
+    validate_flag = 0 ;
+    fig_num = 1 ;
+
+<span class="keyword">elseif</span>(length(varargin)==1)
+    validate_flag = varargin{1} ;
+    fig_num = 1 ;
+
+<span class="keyword">elseif</span>(length(varargin)==2)
+    validate_flag = varargin{1} ;
+    fig_num = varargin{2} ;
+
+<span class="keyword">else</span>
+    error(<span class="string">'Error: Too many input arguments.'</span>)
+
+<span class="keyword">end</span>
+
+<span class="comment">%%--------------------------- Check arguments ---------------------------%%</span>
+<span class="keyword">if</span> ~isnumeric(validate_flag)
+    error(<span class="string">'Error: validatation flag must be a numeric value.'</span>) ;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> ~isnumeric(fig_num)
+    error(<span class="string">'Error: Figure number must be a numeric value.'</span>) ;
+
+<span class="keyword">elseif</span> isempty(fig_num) || fig_num &lt;= 0
+    fig_num = 1 ;
+
+<span class="keyword">end</span>
+
+<span class="comment">%%----------------------------- Quantization ----------------------------%%</span>
+
+<span class="comment">%--- Full-scale</span>
+FS_pk = max([max(abs(real(s_in))),max(abs(imag(s_in)))]) ;
+
+<span class="comment">%--- LSB</span>
+lsb = 2*FS_pk/(2^N-1) ;
+
+<span class="comment">%--- Quantize</span>
+I = real(s_in) ;
+
+polarityI = I ;
+polarityI(I &gt;= 0) = +1 ;
+polarityI(I &lt; 0) = -1 ;
+
+I = abs(I) ;
+I = lsb * fix(I / lsb) + 0.5*lsb ;
+I(I &gt; FS_pk) = FS_pk ;
+
+
+<span class="keyword">if</span> isreal(s_in)
+    Q = 0 ;
+    sout = I.*polarityI ;
+
+<span class="keyword">else</span>
+    Q = imag(s_in) ;
+
+    polarityQ = Q ;
+    polarityQ(Q &gt;= 0) = +1 ;
+    polarityQ(Q &lt; 0) = -1 ;
+
+    Q = abs(Q) ;
+    Q = lsb * fix(Q / lsb) + 0.5*lsb ;
+    Q(Q &gt; FS_pk) = FS_pk ;
+
+    sout = I.*polarityI + j*Q.*polarityQ ;
+
+<span class="keyword">end</span>
+
+<span class="comment">%%--------------------------- Validate results --------------------------%%</span>
+<span class="keyword">if</span> validate_flag
+
+    figure(fig_num); <span class="comment">% clf</span>
+    set(gcf,<span class="string">'color'</span>,<span class="string">'w'</span>) ;
+
+    <span class="keyword">if</span> isreal(s_in)
+        grid <span class="string">on</span>; hold <span class="string">on</span>
+        hndl(1) = plot( s_in );
+        hndl(2) = plot( sout );
+
+        xlabel(<span class="string">'Samples index'</span>)
+        ylabel(<span class="string">'Signal'</span>)
+
+        xlim([0,numel(s_in)])
+
+        hndl_legend(1) = legend(<span class="string">'Original signal'</span>, <span class="string">'Quantized signal'</span>) ;
+
+        hndl_axes(1) = gca ;
+
+    <span class="keyword">else</span>
+        subplot(2,2,1);
+        grid <span class="string">on</span>; hold <span class="string">on</span>
+        hndl(1) = plot( real(s_in) ) ;
+        hndl(2) = plot( real(sout) ) ;
+
+        xlabel(<span class="string">'Samples index'</span>)
+        ylabel(<span class="string">'Signal (real)'</span>)
+
+        xlim([0,numel(s_in)])
+
+        hndl_legend(1) = legend(<span class="string">'Original signal'</span>, <span class="string">'Quantized signal'</span>) ;
+
+        hndl_axes(1) = gca ;
+
+        subplot(2,2,2);
+        grid <span class="string">on</span>; hold <span class="string">on</span>
+        hndl(3) = plot( imag(s_in) ) ;
+        hndl(4) = plot( imag(sout) ) ;
+
+        xlabel(<span class="string">'Samples index'</span>)
+        ylabel(<span class="string">'Signal (imag)'</span>)
+
+        xlim([0,numel(s_in)])
+
+        hndl_legend(2) = legend(<span class="string">'Original signal'</span>, <span class="string">'Quantized signal'</span>) ;
+
+        hndl_axes(2) = gca ;
+
+    <span class="keyword">end</span>
+
+    set(hndl, <span class="string">'LineStyle'</span>, <span class="string">'-'</span>) ;
+    set(hndl, <span class="string">'LineWidth'</span>, 2) ;
+
+    set( hndl_axes, <span class="string">'FontSize'</span>, 14 ) ;
+    set( hndl_axes, <span class="string">'FontName'</span>, <span class="string">'Calibri'</span> ) ;
+
+<span class="keyword">end</span>
+</pre>
+</div></body>

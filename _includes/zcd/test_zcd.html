@@ -1,0 +1,71 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>test_zcd</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2019-10-26">
+<meta name="DC.source" content="test_zcd.m">
+
+</head><body><div class="content"><pre class="codeinput"><span class="comment">%%----------------------------- Housekeeping ----------------------------%%</span>
+clc
+clear
+
+<span class="comment">%%------------------------- Simulation parameters -----------------------%%</span>
+<span class="comment">%--- Test signal</span>
+fc = 2.4*1e9 ;          <span class="comment">% Carrier frequency</span>
+SNR_dB = [6:3:12] ;     <span class="comment">% SNR [dB]</span>
+
+osr = 128 ;             <span class="comment">% Oversampling rate</span>
+N_cycles = 2^9 ;        <span class="comment">% Number of cycles to simulate</span>
+
+<span class="comment">%--- Hysteresis window, normalized to full scale</span>
+vthn = [0.1:0.1:0.5] ;  <span class="comment">% High-to-low transition threshold = -vthn</span>
+                        <span class="comment">% Low-to-high transition threshold = +vthn</span>
+
+<span class="comment">%%------------------ DO NOT CHANGE CODE BELOW THIS LINE -----------------%%</span>
+<span class="comment">%--- Establish time scale</span>
+fs = osr*2*fc ;
+N_samples = N_cycles*osr ;
+t = [ 0 : 1 : N_cycles*osr - 1 ] /fs;
+
+<span class="comment">%--- Generate noiseless test signal</span>
+s_ideal = cos(2*pi*fc*t) ;
+
+<span class="comment">%--- Zero-crossing detector</span>
+<span class="keyword">for</span> m = 1 : numel(SNR_dB)
+    <span class="comment">%--- Generate AWGN</span>
+    noise = ((norm(s_ideal)/sqrt(N_samples))/10^(SNR_dB(m)/20)) * randn( 1, N_samples ) ;
+
+    <span class="comment">%--- Detect zero-crossings</span>
+    <span class="keyword">for</span> n = 1 : numel(vthn)
+        [t_zc, idx_zc] = zcd( s_ideal+noise, t, [-vthn(n),+vthn(n)], <span class="string">'rise'</span> ) ;
+        fc_mean(m,n) = 1/mean(diff(t_zc)) ;
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">%%----------------------------- Plot results ----------------------------%%</span>
+figure(1); clf
+set(gcf,<span class="string">'color'</span>,<span class="string">'w'</span>) ;
+
+hndl = semilogy(vthn, 100*abs((fc_mean-fc)/fc),<span class="string">'-s'</span>) ;
+grid <span class="string">on</span>; hold <span class="string">on</span>
+
+xlabel(<span class="string">'Hysteresis window / Full scale'</span>) ;
+ylabel(<span class="string">'Frequency error [%]'</span>) ;
+
+set(hndl, <span class="string">'LineWidth'</span>, 1.5) ;
+set(hndl, <span class="string">'LineStyle'</span>, <span class="string">'-'</span>) ;
+set(hndl, <span class="string">'Marker'</span>, <span class="string">'s'</span>) ;
+set(hndl, <span class="string">'MarkerSize'</span>, 8) ;
+set(hndl, <span class="string">'MarkerFaceColor'</span>, <span class="string">'auto'</span>) ;
+
+set(gca, <span class="string">'FontName'</span>, <span class="string">'Calibri'</span>) ;
+set(gca, <span class="string">'FontSize'</span>, 12) ;
+
+hndl = legend(<span class="string">'SNR = 6dB'</span>, <span class="string">'SNR = 9dB'</span>, <span class="string">'SNR = 12dB'</span>) ;
+hndl.Location = <span class="string">'NorthEast'</span> ;
+hndl.FontSize = 12 ;
+</pre><img vspace="5" hspace="5" src="/images/test_zcd.svg" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018a</a><br></p>
+</div></body>

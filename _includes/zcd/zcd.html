@@ -1,0 +1,136 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>zcd</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2019-10-26">
+<meta name="DC.source" content="zcd.m">
+</head>
+
+<body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [ t_zc, varargout ] = zcd( s, t, varargin )
+<span class="comment">% zcd  zero crossing detector</span>
+<span class="comment">%   t_zc = zcd( s, t ) returns the time instants t_zc at which the signal s</span>
+<span class="comment">%   defined along the time axis t crosses zero in the positive direction</span>
+<span class="comment">%   (rising edge).</span>
+<span class="comment">%</span>
+<span class="comment">%   t_zc = zcd( ..., zc_threshold) returns the time instants t_zc at which</span>
+<span class="comment">%   the signal s defined along the time axis t crosses zc_threshold in the</span>
+<span class="comment">%   positive direction (rising edge). The argument zc_threshold can be a</span>
+<span class="comment">%   2-element vector specifying high-to-low and low-to-high threshold</span>
+<span class="comment">%   levels, thus representing hysteresis.</span>
+<span class="comment">%</span>
+<span class="comment">%   t_zc = zcd( ..., zc_threshold, edge_type) returns the time instants</span>
+<span class="comment">%   t_zc at which the signal s defined along the time axis t crosses</span>
+<span class="comment">%   zc_threshold in the direction specified by edge_type:</span>
+<span class="comment">%       edge_type = 'rise' (rising edge)</span>
+<span class="comment">%       edge_type = 'fall' (falling edge)</span>
+<span class="comment">%       edge_type = 'any' (rising and falling edge)</span>
+<span class="comment">%</span>
+<span class="comment">%   [..., idx_zc] = zcd( ...) returns indices idx_zc of time samples</span>
+<span class="comment">%   closest to the zero crossing threshold (approximate zero crossings)</span>
+
+<span class="comment">%%---------------------------- Read varargin ----------------------------%%</span>
+<span class="keyword">if</span> isempty(varargin)
+    zc_threshold = mean(s) ;
+    edge_type = <span class="string">'rise'</span> ;
+
+<span class="keyword">elseif</span> numel(varargin) == 1
+    zc_threshold = varargin{1} ;
+    edge_type = <span class="string">'rise'</span> ;
+
+<span class="keyword">elseif</span> numel(varargin) == 2
+    zc_threshold = varargin{1} ;
+    edge_type = varargin{2} ;
+
+<span class="keyword">else</span>
+    error(<span class="string">'Error: Too many input arguments.'</span>)
+
+<span class="keyword">end</span>
+
+<span class="comment">%%---------------------------- Check varargin ----------------------------%</span>
+<span class="keyword">if</span> ~isnumeric(zc_threshold)
+    error( <span class="string">'Error: Zero crossing threshold must be a numeric value.'</span> ) ;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> numel(zc_threshold) &gt; 2
+    error( <span class="string">'Error: At most two zero-crossing thresholds level allowed.'</span> ) ;
+
+<span class="keyword">elseif</span> numel(zc_threshold) == 2
+    vth_hl = zc_threshold(1) ;
+    vth_lh = zc_threshold(2) ;
+<span class="keyword">else</span>
+    vth_hl = zc_threshold(1) ;
+    vth_lh = zc_threshold(1) ;
+
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> ~strcmpi(edge_type, <span class="string">'rise'</span>) &amp;&amp; ~strcmpi(edge_type, <span class="string">'fall'</span>) &amp;&amp; ~strcmpi(edge_type, <span class="string">'any'</span>)
+    error( <span class="string">'Error: Incorrect edge type. Options: ''rise'', ''fall'' or ''any''.'</span> ) ;
+<span class="keyword">end</span>
+
+<span class="comment">%%----------------------- Approximate zero crossings ---------------------%</span>
+<span class="comment">%--- Find samples in well-defined regions</span>
+[ r, idx_lo ] = find( s &lt; vth_hl ) ;
+[ r, idx_hi ] = find( s &gt; vth_lh ) ;
+
+idx_lo = int32(idx_lo) ;
+idx_hi = int32(idx_hi) ;
+
+idx_stable = sort([ idx_lo, idx_hi ]) ;
+
+sq = int8(zeros(size(s))) ;
+sq(idx_lo) = -1 ;
+sq(idx_hi) = +1 ;
+
+<span class="comment">%--- Find samples within hysteresis window</span>
+[ r, idx_hyst ] = find( s &gt;= vth_hl &amp; s &lt;= vth_lh ) ;
+
+idx_hyst = int32(idx_hyst) ;
+
+<span class="comment">%--- Find state of sampleswithin hysteresis window</span>
+idx_search = int32(bsxfun( @(x,y) x-y, idx_hyst(:), reshape(idx_stable,1,[]) )) ;
+idx_search(idx_search&lt;0) = inf ;
+
+[x, idx_target] = min(idx_search,[],2) ;
+idx_state = idx_stable(idx_target)' ;
+
+state = int8(zeros(size(s))) ;
+state(idx_hyst) = sq(idx_state) ;
+
+<span class="comment">%--- Slicer output</span>
+sq = sq + state ;
+
+<span class="comment">%%-------------------------- Exact zero crossings ------------------------%</span>
+<span class="keyword">if</span> strcmpi(edge_type, <span class="string">'rise'</span>)
+    idx_zc = find( diff(sq) == +2 ) + 1 ;
+    <span class="keyword">for</span> n = 1 : numel(idx_zc)
+        t_zc(1,n) = interp1( s(idx_zc(n)-1:idx_zc(n)+1), t(idx_zc(n)-1:idx_zc(n)+1), vth_lh ) ;
+    <span class="keyword">end</span>
+
+<span class="keyword">elseif</span> strcmpi(edge_type, <span class="string">'fall'</span>)
+    idx_zc = find( diff(sq) == -2 ) + 1 ;
+    <span class="keyword">for</span> n = 1 : numel(idx_zc)
+        t_zc(1,n) = interp1( s(idx_zc(n)-1:idx_zc(n)+1), t(idx_zc(n)-1:idx_zc(n)+1), vth_hl ) ;
+    <span class="keyword">end</span>
+
+<span class="keyword">else</span>
+    idx_zc_rise = find( diff(sq) == +2 ) + 1 ;
+    <span class="keyword">for</span> n = 1 : numel(idx_zc_rise)
+        t_zc_rise(1,n) = interp1( s(idx_zc_rise(n)-1:idx_zc_rise(n)+1), t(idx_zc_rise(n)-1:idx_zc_rise(n)+1), vth_lh ) ;
+    <span class="keyword">end</span>
+
+    idx_zc_fall = find( diff(sq) == -2 ) + 1 ;
+    <span class="keyword">for</span> n = 1 : numel(idx_zc_fall)
+        t_zc_fall(1,n) = interp1( s(idx_zc_fall(n)-1:idx_zc_fall(n)+1), t(idx_zc_fall(n)-1:idx_zc_fall(n)+1), vth_hl ) ;
+    <span class="keyword">end</span>
+
+    idx_zc = sort( [idx_zc_rise, idx_zc_fall] ) ;
+    t_zc = sort( [t_zc_rise, t_zc_fall] ) ;
+
+<span class="keyword">end</span>
+
+varargout{1} = idx_zc ;
+</pre>
+</div></body>

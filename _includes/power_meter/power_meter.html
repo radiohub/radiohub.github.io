@@ -1,0 +1,125 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>power_meter</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2020-03-17">
+<meta name="DC.source" content="power_meter.m">
+</head>
+
+<body><div class="content"><pre class="codeinput"><span class="keyword">function</span> P = power_meter(s_psd, f, varargin)
+<span class="comment">% power_meter   measure signal power in a given bandwidth.</span>
+<span class="comment">%   P = power_meter(s_psd, f) measures total power P_dBm of a signal given</span>
+<span class="comment">%   it's two-sided power spectral density (PSD) s_psd. P_dBm is referred to</span>
+<span class="comment">%   a 1-ohm load.</span>
+<span class="comment">%</span>
+<span class="comment">%   P = power_meter(s_psd, f, RL) measures total power P_dBm referred to</span>
+<span class="comment">%   a resistance Ro.</span>
+<span class="comment">%</span>
+<span class="comment">%   P = power_meter(..., [], f_limit) measures total power within the</span>
+<span class="comment">%   frequency range [-f_limit, f_limit].</span>
+<span class="comment">%</span>
+<span class="comment">%   P = power_meter(..., [], [f_lo,f_hi]) measures total power within the</span>
+<span class="comment">%   frequency range f_lo to f_hi.</span>
+
+<span class="comment">%%---------------------------- Read varargin ----------------------------%%</span>
+<span class="keyword">if</span> isempty(varargin)
+    Ro = [] ;
+    f1 = [] ;
+    f2 = [] ;
+
+<span class="keyword">elseif</span> numel(varargin) == 1
+    Ro = varargin{1} ;
+    f1 = [] ;
+    f2 = [] ;
+
+<span class="keyword">elseif</span> numel(varargin) == 2
+    Ro = varargin{1} ;
+
+    <span class="keyword">if</span> numel(varargin{2}) == 1
+        <span class="keyword">if</span> varargin{2} &lt; 0
+            f1 = +varargin{2};
+            f2 = -varargin{2};
+        <span class="keyword">else</span>
+            f1 = -varargin{2};
+            f2 = +varargin{2};
+        <span class="keyword">end</span>
+    <span class="keyword">elseif</span> numel(varargin{2}) == 2
+        f1 = varargin{2}(1) ;
+        f2 = varargin{2}(2) ;
+    <span class="keyword">else</span>
+        error(<span class="string">'Error: Too many input arguments for frequency limits [f_lo,f_hi].'</span>)
+    <span class="keyword">end</span>
+
+<span class="keyword">elseif</span> numel(varargin) == 3
+    Ro = varargin{1} ;
+    f1 = +varargin{2} ;
+    f2 = +varargin{3} ;
+
+<span class="keyword">else</span>
+    error(<span class="string">'Error: Too many input arguments.'</span>)
+
+<span class="keyword">end</span>
+
+<span class="comment">%%---------------------------- Check varargin ---------------------------%%</span>
+fs = 2*max(f) ;
+N_fft = numel(s_psd) ;
+f_step = fs/N_fft ;
+
+<span class="keyword">if</span> isvector(s_psd)
+    s_psd = reshape(s_psd,1,N_fft) ;
+<span class="keyword">else</span>
+    error(<span class="string">'Error: Signal must have one singleton dimension.'</span>)
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> isvector(s_psd)
+    f = reshape(f,1,N_fft) ;
+<span class="keyword">else</span>
+    error(<span class="string">'Error:  Signal must have one singleton dimension.'</span>)
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> numel(s_psd) ~= numel(f)
+    error(<span class="string">'Error:  Signal and frequency dimensions do not agree.'</span>)
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> isempty(Ro)
+    Ro = 1 ;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> ~isnumeric(Ro)
+    error(<span class="string">'Error: Reference resistance must be a numeric value.'</span>)
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> isempty(f1) || isempty(f2)
+    f1 = -fs/2 ;
+    f2 = +fs/2 ;
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> ~isnumeric(f1) || ~isnumeric(f2)
+    error(<span class="string">'Error: Power measurement frequency limits must be numeric values.'</span>)
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> f1 &gt;= f2
+    error(<span class="string">'Error: Power measurement frequency limits must be provided in ascending order.'</span>)
+<span class="keyword">end</span>
+
+<span class="comment">%%-------------------------- Power measurement --------------------------%%</span>
+f_limit1 = -f2;
+f_limit2 = -f1;
+f_limit3 = +f1;
+f_limit4 = +f2;
+
+[r,c1] = find( abs(f-f_limit1) == min(abs(f-f_limit1)) );
+[r,c2] = find( abs(f-f_limit2) == min(abs(f-f_limit2)) );
+[r,c3] = find( abs(f-f_limit3) == min(abs(f-f_limit3)) );
+[r,c4] = find( abs(f-f_limit4) == min(abs(f-f_limit4)) );
+
+P = sum(s_psd(1,[c1:c2,c3:c4]))*f_step;
+
+<span class="keyword">if</span> sign(f1) == -sign(f2)
+    P = 0.5 * P/Ro ;
+<span class="keyword">end</span>
+</pre>
+</div></body>

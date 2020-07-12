@@ -1,0 +1,107 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>test_power_meter</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2020-03-17">
+<meta name="DC.source" content="test_power_meter.m">
+</head>
+
+<body><div class="content"><pre class="codeinput"><span class="comment">%%----------------------------- Housekeeping ----------------------------%%</span>
+clc
+clear
+
+<span class="comment">%%------------------------- Test signal parameters ----------------------%%</span>
+<span class="comment">%--- Test signal</span>
+bit_rate = 1 ;              <span class="comment">% Bit rate</span>
+BWn_ch = [0.1:0.1:1.0] ;    <span class="comment">% Normalized channel BW (relative to bit rate)</span>
+P_dBm = 3.0 ;               <span class="comment">% Desired signal power</span>
+
+osr = 16 ;                  <span class="comment">% Oversampling rate</span>
+N_bits = 2^20 ;             <span class="comment">% Number of cycles to simulate</span>
+
+<span class="comment">%--- Raised-cosine pulse shaping filter</span>
+n_rcFilt = 32 ;             <span class="comment">% Filter order</span>
+beta_rcFilt = 0.50 ;        <span class="comment">% Filter roll-off factor</span>
+
+<span class="comment">%%------------------ DO NOT CHANGE CODE BELOW THIS LINE -----------------%%</span>
+<span class="comment">%--- Establish time scale</span>
+fs = osr * bit_rate ;               <span class="comment">% Sampling frequency</span>
+N_samples = N_bits * osr ;          <span class="comment">% Total number of samples</span>
+t = [ 0: N_samples - 1 ] / fs ;     <span class="comment">% Time axis</span>
+
+<span class="comment">%--- Design pulse shaping filter #1: sinc filter</span>
+h_sincFilt = ones(1,osr) ;          <span class="comment">% Impulse response</span>
+gd_sincFilt = osr/2 ;               <span class="comment">% Group delay</span>
+
+<span class="comment">%--- Design pulse shaping filter #2: raised-cosine filter</span>
+h_rcFilt = rcosdesign(beta_rcFilt,n_rcFilt/osr,osr,<span class="string">'normal'</span>) ;  <span class="comment">% Impulse response</span>
+gd_rcFilt = mean( grpdelay(h_rcFilt) ) ;                        <span class="comment">% Group delay</span>
+
+<span class="comment">%--- Generate random bit stream (polar NRZ)</span>
+s = 2*randi([0,1],1,N_bits) - 1 ;
+
+<span class="comment">%--- Oversampling</span>
+s = [ s; zeros(osr-1,N_bits) ] ;
+s = reshape( s, 1, N_samples ) ;
+
+<span class="comment">%--- Pulse shaping</span>
+s_sincFilt = filter( h_sincFilt, 1, [s, zeros(1,gd_sincFilt)] ) ;
+s_sincFilt = s_sincFilt( gd_sincFilt + 1 : N_samples + gd_sincFilt ) ;
+
+s_rcFilt = filter( h_rcFilt, 1, [s, zeros(1,gd_rcFilt)] ) ;
+s_rcFilt = s_rcFilt( gd_rcFilt + 1 : N_samples + gd_rcFilt ) ;
+
+<span class="comment">%--- Establish signal power level</span>
+s_sincFilt = s_sincFilt * (10^((P_dBm-30)/20)) / (norm(s_sincFilt)/sqrt(N_samples)) ;
+s_rcFilt = s_rcFilt * (10^((P_dBm-30)/20)) / (norm(s_rcFilt)/sqrt(N_samples)) ;
+
+<span class="comment">%--- Total power measurement: time domain</span>
+Pt_sincFilt_td = norm(s_sincFilt)^2 / N_samples ;
+Pt_rcFilt_td = norm(s_rcFilt)^2 / N_samples ;
+
+<span class="comment">%--- Total power measurement: frequency domain</span>
+[s_sincFilt_fft, s_sincFilt_psd, f] = fft_probe(s_sincFilt, fs) ;
+[s_rcFilt_fft, s_rcFilt_psd, f] = fft_probe(s_rcFilt, fs) ;
+
+Pt_sincFilt_fd = power_meter(s_sincFilt_psd, f) ;
+Pt_rcFilt_fd = power_meter(s_rcFilt_psd, f) ;
+
+<span class="comment">%--- Channel power measurement: frequency domain</span>
+<span class="keyword">for</span> n = 1 : numel(BWn_ch)
+    P_sincFilt_fd(n) = power_meter(s_sincFilt_psd, f, 1, BWn_ch(n)*bit_rate) ;
+    P_rcFilt_fd(n) = power_meter(s_rcFilt_psd, f, 1, BWn_ch(n)*bit_rate) ;
+<span class="keyword">end</span>
+
+<span class="comment">%%------------------------- Plot/Display results ------------------------%%</span>
+<span class="comment">%--- Display results</span>
+disp(<span class="string">' '</span>)
+disp( [<span class="string">'Power measurement:'</span>] )
+disp( [<span class="string">'   Time domain [dBm]: '</span>, num2str(10*log10(Pt_sincFilt_td*1e3),<span class="string">'%1.2f\n'</span>) ] )
+disp( [<span class="string">'   Frequency domain [dBm]: '</span>, num2str(10*log10(Pt_sincFilt_fd*1e3),<span class="string">'%1.2f\n'</span>) ] )
+disp( [<span class="string">'   Error [%] = '</span>, num2str(100*(Pt_sincFilt_fd - Pt_sincFilt_td)/Pt_sincFilt_td,<span class="string">'%1.2e\n'</span>) ] )
+disp(<span class="string">' '</span>)
+
+<span class="comment">%--- Plot results</span>
+figure(1); clf
+set(gcf,<span class="string">'color'</span>,<span class="string">'w'</span>) ;
+
+grid <span class="string">on</span>; hold <span class="string">on</span>
+hndl(1) = plot( BWn_ch, 100 * P_sincFilt_fd / Pt_sincFilt_fd ) ;
+hndl(2) = plot( BWn_ch, 100 * P_rcFilt_fd / Pt_rcFilt_fd ) ;
+
+xlabel(<span class="string">'Channel BW / Bit rate'</span>) ;
+ylabel(<span class="string">'In-band power / Total power [%]'</span>) ;
+
+set(hndl, <span class="string">'LineWidth'</span>, 2) ;
+set(hndl, <span class="string">'LineStyle'</span>, <span class="string">'-'</span>) ;
+set(hndl, <span class="string">'Marker'</span>, <span class="string">'s'</span>) ;
+set(hndl, <span class="string">'MarkerSize'</span>, 8) ;
+set(hndl, <span class="string">'MarkerFaceColor'</span>, <span class="string">'auto'</span>) ;
+
+set(gca, <span class="string">'FontName'</span>, <span class="string">'Calibri'</span>) ;
+set(gca, <span class="string">'FontSize'</span>, 14) ;
+</pre>
+</div></body>

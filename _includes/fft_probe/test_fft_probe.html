@@ -1,0 +1,47 @@
+
+<!--<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>test_fft_probe</title>
+<meta name="generator" content="MATLAB 9.4">
+<link rel="schema.DC" href="http://purl.org/dc/elements/1.1/">
+<meta name="DC.date" content="2020-03-13">
+<meta name="DC.source" content="test_fft_probe.m">
+
+<body><body><div class="content"><pre class="codeinput"><span class="comment">%%----------------------------- Housekeeping ----------------------------%%</span>
+clc
+clear
+
+<span class="comment">%%------------------------- Test signal parameters ----------------------%%</span>
+<span class="comment">%--- Test signal</span>
+fc = 2.4*1e9 ;      <span class="comment">% CW signal frequency</span>
+Ac = 1 ;            <span class="comment">% CW signal amplitude</span>
+SNR_dB = 20 ;       <span class="comment">% Noise SNR</span>
+
+osr = 4 ;           <span class="comment">% Oversampling rate</span>
+N_cycles = 2^20 ;   <span class="comment">% Number of cycles to simulate</span>
+
+<span class="comment">%%------------------ DO NOT CHANGE CODE BELOW THIS LINE -----------------%%</span>
+<span class="comment">%--- Establish time scale</span>
+fs = osr*2*fc ;
+N_samples = N_cycles*osr ;
+t = [ 0 : 1 : N_samples - 1 ] /fs;
+
+<span class="comment">%--- Generate noiseless test signal</span>
+s_ideal = Ac*cos(2*pi*fc*t) ;
+
+<span class="comment">%--- Generate AWGN</span>
+noise = randn(1, N_samples) ;
+
+<span class="comment">%--- Establish SNR</span>
+SNR = 10^(SNR_dB/10) ;
+Ps = norm(s_ideal)^2 / N_samples ;
+noise = sqrt(Ps/SNR) * noise ;
+
+<span class="comment">%--- Noisy test signal</span>
+s = s_ideal + noise ;
+
+<span class="comment">%--- Spectral analysis</span>
+[s_fft, s_psd, f] = fft_probe(s, fs, 1, 0) ;
+</pre><img vspace="5" hspace="5" src="/images/test_fft_probe.svg" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018a</a><br></p>
+</div></body>
