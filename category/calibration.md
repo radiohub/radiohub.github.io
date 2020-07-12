@@ -1,6 +1,6 @@
 ---
 layout: posts_by_category
-categories: mismatch
-title: Mismatch
-permalink: /category/mismatch
+categories: calibration
+title: Calibration
+permalink: /category/calibration
 ---
