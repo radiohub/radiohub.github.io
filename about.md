@@ -24,7 +24,8 @@ CMOS power amplifiers for 2GHz/5GHz
 **EDUCATION**
 
 + **Doctor of Philosophy (Ph.D.)**  
-[University of Twente](https://www.utwente.nl/en/eemcs/icd/){:target="_blank"}, the Netherlands  
+[Integrated Circuit Design (ICD) Group](https://www.utwente.nl/en/eemcs/icd/){:target="_blank"}, Prof. Bram Nauta  
+University of Twente, the Netherlands  
 Feb 2009 – Jan 2013  
 Research in highly linear radio receivers
 
