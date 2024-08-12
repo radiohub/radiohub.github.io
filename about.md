@@ -6,6 +6,11 @@ permalink: /about/
 
 **EXPERIENCE**
 
++ **RF Systems Lead**  
+[Meta](https://about.meta.com/realitylabs/){:target="_blank"}, San Francisco Bay Area  
+Sep 2021 – 2023
+WiFi development for AR projects
+
 + **Principal Engineer**  
 [Mojo Vision](https://mojo.vision/){:target="_blank"}, San Francisco Bay Area  
 Sep 2017 – Present  
