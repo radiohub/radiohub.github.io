@@ -7,18 +7,18 @@ permalink: /about/
 **EXPERIENCE**
 
 + **Founding Engineer**  
-[Array Labs](https://www.arraylabs.io/){:target="_blank"}, San Francisco Bay Area
-2023 – Present
+[Array Labs](https://www.arraylabs.io/){:target="_blank"}, San Francisco Bay Area  
+2023 – Present   
 Radar and data communications for nanosatellite fleets
 
 + **RF Systems Lead**  
 [Meta](https://about.meta.com/realitylabs/){:target="_blank"}, San Francisco Bay Area  
-2021 – 2023
-WiFi development for AR projects
+2021 – 2023  
+WiFi development for AR
 
 + **Principal Engineer**  
 [Mojo Vision](https://mojo.vision/){:target="_blank"}, San Francisco Bay Area  
-2017 – 2021
+2017 – 2021  
 Leading radio chip development (architecture, circuit design, layout and verification)
 
 + **Senior Staff Engineer**  
